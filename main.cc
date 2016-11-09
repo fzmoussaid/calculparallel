@@ -18,15 +18,18 @@ int main(int argc, char** argv)
 	double t, tp;
 	
 	VectorXd X(N*N),Y;
-	double alpha(1.0), beta(1.0), gamma(1.0);
-	X.setOnes();
+	double alpha(1.0), beta(1.0), gamma(1.0), eps(1e-8);
+	X = 4.2*VectorXd::Ones(N*N);
 	
-	SolverCG var(alpha, beta, gamma, N, N);
+	SolverCG var(alpha, beta, gamma, eps, N, N);
 	
 	var.matmulA(X,Y);
 	
+	X.setZero();
+	cout << "nb iter : " << var.gradConj(X, Y, N*N) << endl;
+	
 	for(int i(0); i < N*N; ++i) {
-		cout << Y(i) << endl;
+		cout << X(i) << endl;
 	}
 	
 	//~ MPI_Init (&argc, &argv);

@@ -1,9 +1,41 @@
 
 #include "SolverCG.hpp"
 
-SolverCG::SolverCG(double alpha, double beta, double gamma, int nx, int ny)
-	:	_alpha(alpha), _beta(beta), _gamma(gamma), _nx(nx), _ny(ny)
+SolverCG::SolverCG(double alpha, double beta, double gamma, double eps, int nx, int ny)
+	:	_alpha(alpha), _beta(beta), _gamma(gamma), _eps(eps), _nx(nx), _ny(ny)
 { }
+
+int SolverCG::gradConj(VectorXd& X, const VectorXd& B, int Niter)
+{
+	int n(X.size()), iter(1);
+	VectorXd R(n), W(n), D(n);
+	double nr, a, b;
+	
+	X.setZero();
+	matmulA(X, R);
+	R -= B;
+	D = R;
+	nr = R.norm();
+	
+	while(nr > _eps && iter < Niter)
+	{
+		matmulA(D, W);
+		a = D.dot(R)/D.dot(W);
+		
+		X -= a*D;
+		
+		b = 1.0/(nr*nr);
+		R -= a*W;
+		
+		nr = R.norm();
+		b *= nr*nr;
+		
+		D = R + b*D;
+		iter++;
+	}
+	
+	return iter;
+}
   
 void SolverCG::matmulA(const VectorXd& X, VectorXd& Y) const
 {
