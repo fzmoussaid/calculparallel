@@ -11,7 +11,7 @@ DEBUG_FLAG = -g -std=c++11 -Wall -Woverloaded-virtual -I Eigen/Eigen
 PROG = run
 
 # fichier source a compiler
-SRC = main.cc Tools.cpp SolverCG.cpp
+SRC = Main.cc
 
 # par defaut on compile en optimise
 optim : $(SRC)

@@ -1,9 +1,9 @@
 //#include <mpi.h>
 #include <Eigen>
 #include "Parameters.cpp"
-#include "Tools.hpp"
+#include "Tools.cpp"
 #include "Functions.cpp"
-#include "SolverCG.hpp"
+#include "SolverCG.cpp"
 
 using namespace std;
 using namespace Eigen;
@@ -36,27 +36,28 @@ int main(int argc, char** argv)
      {
        for (int i=0; i<nx; i++)
        {
-         RHS0(bijectionectionection(i,j,nx)) = f((i+1)*dx,(j+1)*dy,(time-1)*dt,p);
+         RHS0(bijection(i,j,nx)) = functionF((i+1)*dx,(j+1)*dy,(time-1)*dt,p);
        }
-       RHS0(bijectionectionection(i,j,nx)) -=  beta*h(0.,(i+1)*dy,(time-1)*dt,p);
-       RHS0(bijectionectionection(0,j,nx)) -= beta*h(lx,(i+1)*dy,(time-1)*dt,p);
+       RHS0(bijection(1,j,nx)) -=  beta*functionH(0.,(j+1)*dy,(time-1)*dt,p);
+       RHS0(bijection(0,j+1,nx)) -= beta*functionH(lx,(j+1)*dy,(time-1)*dt,p);
        for (int i=0; i<nx; i++)
        {
          if (j==0)
          {
-           RHS0(i) -= gamma*g((j+1)*dx,0.,(time-1)*dt,p);
+           RHS0(i) -= gamma*functionG((j+1)*dx,0.,(time-1)*dt,p);
          }
          else if (j==ny-1)
          {
-           RHS0(bijectionectionection(i,j,nx)) -= gamma*g((j+1)*dx,ly,(time-1)*dt,p);
+           RHS0(bijection(i,j,nx)) -= gamma*functionG((j+1)*dx,ly,(time-1)*dt,p);
          }
+				 RHS(bijection(i,j,nx)) = RHS0(bijection(i,j,nx)) + U0(bijection(i,j,nx))/dt;
        }
-       RHS(bijectionectionection(i,j,nx)) = RHS0(bijectionectionection(i,j,nx)) + U0(bijectionectionection(i,j,nx))/dt;
+
      }
 
      //! gradient conjugue adapte
      iter = solver.gradConj(U,RHS,nIterMax);
-     U0 = U
+     U0 = U;
 }
 
 	//MPI_Finalize();

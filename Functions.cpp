@@ -13,6 +13,7 @@ double functionF(double x, double y, double t, int n)
   {
     f = exp(-(x-lx/2)*(x-lx/2))*exp(-(y-ly/2)*(y-ly/2))*cos(pi/2*t);
   }
+  return f;
 }
 
 double functionG(double x, double y, double t, int n)
@@ -26,6 +27,7 @@ double functionG(double x, double y, double t, int n)
   {
        g = sin(x) + cos(y);
   }
+  return g;
 }
 
 double functionH(double x, double y, double t, int n)
@@ -43,4 +45,5 @@ double functionH(double x, double y, double t, int n)
   {
        h = 1.;
   }
+  return h;
 }
