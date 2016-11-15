@@ -1,4 +1,6 @@
 //#include <mpi.h>
+#include <iostream>
+#include <fstream>
 #include <Eigen>
 #include "Parameters.cpp"
 #include "Tools.cpp"
@@ -12,9 +14,6 @@ int main(int argc, char** argv)
 {
 	//int me, np, i1, im, p=1;
 	double alpha = 1/dt + 2*D*(1/(dx*dx) + 1/(dy*dy)), beta = -D/(dx*dx), gamma = -D/(dy*dy);
-  double xi, yi, t_total,norme_diff,norme_exacte,norme_diff_tot,norme_exacte_tot;
-  string name;
-  int iter=0;
 
 	//MPI_Init (&argc, &argv);
 
@@ -27,39 +26,66 @@ int main(int argc, char** argv)
   U0.setZero();
 
   SolverCG solver(alpha,beta,gamma,eps,nx,ny);
-
-  for (int time=1; time<10; time++)
+	cout << "eps : " << eps << endl;
+  for (int time=0; time<1; time++)
   {
      //! construction de RHS
      RHS0.setZero();
      for (int j=0; j<ny; j++)
      {
-       for (int i=0; i<nx; i++)
+       for (int i=1; i<nx-1; i++)
        {
-         RHS0(bijection(i,j,nx)) = functionF((i+1)*dx,(j+1)*dy,(time-1)*dt,p);
+         RHS0(bijection(i,j,nx)) = functionF(i*dx,j*dy,time*dt,p);
        }
-       RHS0(bijection(1,j,nx)) -=  beta*functionH(0.,(j+1)*dy,(time-1)*dt,p);
-       RHS0(bijection(0,j+1,nx)) -= beta*functionH(lx,(j+1)*dy,(time-1)*dt,p);
-       for (int i=0; i<nx; i++)
-       {
-         if (j==0)
-         {
-           RHS0(i) -= gamma*functionG((j+1)*dx,0.,(time-1)*dt,p);
-         }
-         else if (j==ny-1)
-         {
-           RHS0(bijection(i,j,nx)) -= gamma*functionG((j+1)*dx,ly,(time-1)*dt,p);
-         }
-				 RHS(bijection(i,j,nx)) = RHS0(bijection(i,j,nx)) + U0(bijection(i,j,nx))/dt;
-       }
+       RHS0(bijection(0,j,nx)) -=  beta*functionH(0.,j*dy,time*dt,p);
+       RHS0(bijection(nx-1,j,nx)) -= beta*functionH(lx,j*dy,time*dt,p);
+		 }
+		 for (int i=0; i<nx; i++)
+		 {
+			 RHS0(bijection(i,0,nx)) -= gamma*functionG(i*dx,0.,time*dt,p);
+			 RHS0(bijection(i,ny-1,nx)) -= gamma*functionG(i*dx,ly,time*dt,p);
+		 }
 
-     }
+		 RHS = RHS0 + U0/dt;
+		 //! gradient conjugue adapte
+		 cout << "iter : " << solver.gradConj(U,RHS,nIterMax) << endl;
+		 U0 = U;
 
-     //! gradient conjugue adapte
-     iter = solver.gradConj(U,RHS,nIterMax);
-     U0 = U;
-}
+	 }
 
+  ofstream file_sol("Sol.dat"), file_sol_exact("Sol_exacte.dat");
+	double norm_diff=0., norm_exact=0.;
+	for (int j=0; j<ny; j++)
+	{
+		for (int i=0; i<nx; i++)
+		{
+			double xi = i*dx;
+			double yi = j*dy;
+			file_sol << xi << " " << yi << " " << U(bijection(i,j,nx)) << endl;
+
+			if (p==2)
+			{
+				file_sol_exact << xi << " " << yi << " " << sin(xi)+cos(yi) << endl;
+				norm_diff = max(abs(U(bijection(i,j,nx)) - (sin(xi)+cos(yi))),norm_diff);
+				norm_exact = max(abs(sin(xi)+cos(yi)),norm_exact);
+			}
+			else if (p==1)
+			{
+				file_sol_exact << xi << " " << yi << " " << xi*(1-xi)*yi*(1-yi) << endl;
+				norm_diff = max(abs(U(bijection(i,j,nx)) - (xi*(1-xi)*yi*(1-yi))),norm_diff);
+				norm_exact = max(abs(xi*(1-xi)*yi*(1-yi)),norm_exact);
+			}
+		}
+		file_sol << endl;
+		file_sol_exact << endl;
+	}
+	if ((p==1)||(p==2))
+	{
+		cout << "erreur relative en norme infinie : " << norm_diff/norm_exact << endl;
+	}
+
+	file_sol.close();
+	file_sol_exact.close();
 	//MPI_Finalize();
 
 
