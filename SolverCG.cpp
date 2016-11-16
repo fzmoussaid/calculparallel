@@ -4,7 +4,7 @@ SolverCG::SolverCG(double alpha, double beta, double gamma, double eps, int nx, 
 	:	_alpha(alpha), _beta(beta), _gamma(gamma), _eps(eps), _nx(nx), _ny(ny)
 { }
 
-int SolverCG::gradConj(VectorXd& X, const VectorXd& B, int Niter)
+int SolverCG::gradConj(VectorXd& X, const VectorXd& B, int Niter) const
 {
 	int n(X.size()), iter(1);
 	VectorXd R(n), W(n), D(n);

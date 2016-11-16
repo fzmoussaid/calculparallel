@@ -1,3 +1,6 @@
+
+#include "Functions.hpp"
+
 double functionF(double x, double y, double t, int n)
 {
   double f = 0.;

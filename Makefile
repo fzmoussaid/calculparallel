@@ -1,5 +1,5 @@
 # Compilateur utilise
-CC = g++
+CC = /usr/lib64/openmpi/bin/mpicxx
 
 # options en mode optimise
 OPTIM_FLAG = -O3 -std=c++11 -Wall -Woverloaded-virtual -I Eigen/Eigen
@@ -11,7 +11,7 @@ DEBUG_FLAG = -g -std=c++11 -Wall -Woverloaded-virtual -I Eigen/Eigen
 PROG = run
 
 # fichier source a compiler
-SRC = Main.cc
+SRC = Main.cc Functions.cpp SolverCG.cpp Timestep.cpp Tools.cpp
 
 # par defaut on compile en optimise
 optim : $(SRC)
