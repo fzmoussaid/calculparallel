@@ -37,10 +37,7 @@ int main(int argc, char** argv)
 		timeStep(solver, U, eps, beta, gamma, time*dt, nIterMax, nx, im-i1+1, recouvr, me, np, i1, im);
 	}
 
-	if(me == 0)
-	{
-		system("rm sol/*");
-	}
+
 	ofstream file_sol("sol/Sol" + to_string(me) + ".dat"), file_sol_exact("sol/Sol_exacte" + to_string(me) + ".dat");
 	double norm_diff=0., norm_exact=0.;
 	for (int j=0; j<(im-i1+1); j++)
@@ -74,7 +71,7 @@ int main(int argc, char** argv)
 
 	file_sol.close();
 	file_sol_exact.close();
-	
+
 	MPI_Finalize();
 
 
