@@ -13,7 +13,7 @@ using namespace Eigen;
 
 int main(int argc, char** argv)
 {
-	int me, np, i1, im, recouvr(3);
+	int me, np, i1, im, recouvr(4);
 	double alpha = 1./dt + 2.*D*(1./(dx*dx) + 1./(dy*dy)), beta = -D/(dx*dx), gamma = -D/(dy*dy);
 
 	MPI_Init (&argc, &argv);
@@ -23,9 +23,10 @@ int main(int argc, char** argv)
 
 	charge(ny, np, me, recouvr, i1, im);
 
-	VectorXd U(nl);
+	VectorXd U(nx*(im-i1+1));
+	U.setZero();
 
-	SolverCG solver(alpha,beta,gamma,eps,nx,ny);
+	SolverCG solver(alpha,beta,gamma,eps,nx,im-i1+1);
 	cout << "eps : " << eps << endl;
 	for (int time=0; time<10; time++)
 	{
@@ -34,10 +35,16 @@ int main(int argc, char** argv)
 		{
 			cout << "iter " << time << endl;
 		}
+<<<<<<< HEAD
+		timeStep(solver, U, 1e-3, beta, gamma, time*dt, nIterMax, nx, im-i1+1, recouvr, me, np, i1, im);
+	}
+	
+=======
 		timeStep(solver, U, eps, beta, gamma, time*dt, nIterMax, nx, im-i1+1, recouvr, me, np, i1, im);
 	}
 
 
+>>>>>>> 072a6480bfb4d31caf01de9228b6769bf8c9d9e5
 	ofstream file_sol("sol/Sol" + to_string(me) + ".dat"), file_sol_exact("sol/Sol_exacte" + to_string(me) + ".dat");
 	double norm_diff=0., norm_exact=0.;
 	for (int j=0; j<(im-i1+1); j++)
