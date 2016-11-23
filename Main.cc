@@ -13,7 +13,7 @@ using namespace Eigen;
 
 int main(int argc, char** argv)
 {
-	int me, np, i1, im, recouvr(4);
+	int me, np, i1, im, recouvr(6);
 	double alpha = 1./dt + 2.*D*(1./(dx*dx) + 1./(dy*dy)), beta = -D/(dx*dx), gamma = -D/(dy*dy);
 
 	MPI_Init (&argc, &argv);
@@ -28,14 +28,14 @@ int main(int argc, char** argv)
 
 	SolverCG solver(alpha,beta,gamma,eps,nx,im-i1+1);
 	cout << "eps : " << eps << endl;
-	for (int time=0; time<10; time++)
+	for (int time=0; time<40; time++)
 	{
 		//! construction de RHS
 		if(me == 0)
 		{
 			cout << "iter " << time << endl;
 		}
-		timeStep(solver, U, 1e-3, beta, gamma, time*dt, nIterMax, nx, im-i1+1, recouvr, me, np, i1, im);
+		cout << "Niter Schwartz : " << timeStep(solver, U, 1e-9, beta, gamma, time*dt, nIterMax, nx, ny, recouvr, me, np, i1, im) << endl;
 	}
 	
 	ofstream file_sol("sol/Sol" + to_string(me) + ".dat"), file_sol_exact("sol/Sol_exacte" + to_string(me) + ".dat");
