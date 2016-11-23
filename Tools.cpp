@@ -21,12 +21,14 @@ void charge(int n, int np, int me, int recouvr, int& i1, int& im)
 		  im = i1 + n/np  -1;
 	}
 	
+	
+	int rc = recouvr>>1;
 	if(me > 0)
 	{
-		i1 -= recouvr;
+		i1 -= rc;
 	}
 	if(me < np-1)
 	{
-		im += recouvr;
+		im += rc+recouvr%2;
 	}
 }
