@@ -4,7 +4,7 @@
 // nyLocal = im -i1 + 1
 int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double gamma, double t, int Niter, int nx, int ny, int recouvr, int me, int np, int i1, int im)
 {
-	double nr, maxnr, x;
+	double nr, nr2, maxnr, maxnr2, x;
 	int nyLocal(im-i1+1);
 	VectorXd Ubas(nx), Uhaut(nx), UbasNext(nx), UhautNext(nx), Unext(nx*nyLocal), Rhs(nx*nyLocal);
 	MPI_Status status;
@@ -17,8 +17,8 @@ int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double 
 	
 	int i(0);
 	
-	//~ do
-	for(int k(0); k < 10 ; ++k)
+	//~ for(int k(0); k < 10 ; ++k)
+	do
 	{
 		Rhs.setZero();
 		if(me == 0)
@@ -80,36 +80,46 @@ int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double 
 		cout << "Gradconj " << var.gradConj(Unext, Rhs, Niter) << endl;
 		
 		nr = 0.0;
+		nr2 = 0.0;
 		
-		if(me == 0)
-		{
-			for(int i(0); i < nx; i++)
-			{				
-				x = UhautNext(i) - Uhaut(i);
-				nr += x*x;
-			}
+		for(int i(0); i < Un.size(); i++) {
+			x = Unext(i) - Un(i);
+			nr += x*x;
+			
+			x = Un(i);
+			nr2 += x*x;
 		}
-		else if(me == np-1)
-		{
-			for(int i(0); i < nx; i++)
-			{
-				x = UbasNext(i) - Ubas(i);
-				nr += x*x;
-			}
-		}
-		else
-		{
-			for(int i(0); i < nx; i++)
-			{
-				x = UhautNext(i) - Uhaut(i);
-				nr += x*x;
-				
-				x = UbasNext(i) - Ubas(i);
-				nr += x*x;
-			}
-		}
+		
+		//~ if(me == 0)
+		//~ {
+			//~ for(int i(0); i < nx; i++)
+			//~ {				
+				//~ x = UhautNext(i) - Uhaut(i);
+				//~ nr += x*x;
+			//~ }
+		//~ }
+		//~ else if(me == np-1)
+		//~ {
+			//~ for(int i(0); i < nx; i++)
+			//~ {
+				//~ x = UbasNext(i) - Ubas(i);
+				//~ nr += x*x;
+			//~ }
+		//~ }
+		//~ else
+		//~ {
+			//~ for(int i(0); i < nx; i++)
+			//~ {
+				//~ x = UhautNext(i) - Uhaut(i);
+				//~ nr += x*x;
+				//~ 
+				//~ x = UbasNext(i) - Ubas(i);
+				//~ nr += x*x;
+			//~ }
+		//~ }
 		
         MPI_Allreduce(&nr, &maxnr, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+        MPI_Allreduce(&nr2, &maxnr2, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 		
 		if(me == 0)
 			cout << "nr = " << maxnr << endl;
@@ -118,8 +128,7 @@ int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double 
         Uhaut = UhautNext;
         Ubas = UbasNext;
         i++;
-	//~ } while(maxnr > eps);
-	}
+	} while(maxnr/maxnr2 > eps);
 	
 	
 	//~ ofstream file_sol("sol/Sol" + to_string(me) + ".dat");

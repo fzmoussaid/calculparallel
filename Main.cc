@@ -35,7 +35,7 @@ int main(int argc, char** argv)
 		{
 			cout << "iter " << time << endl;
 		}
-		cout << "Niter Schwartz : " << timeStep(solver, U, 1e-9, beta, gamma, time*dt, nIterMax, nx, ny, recouvr, me, np, i1, im) << endl;
+		cout << "Niter Schwartz : " << timeStep(solver, U, 1e-12, beta, gamma, time*dt, nIterMax, nx, ny, recouvr, me, np, i1, im) << endl;
 	}
 	
 	ofstream file_sol("sol/Sol" + to_string(me) + ".dat"), file_sol_exact("sol/Sol_exacte" + to_string(me) + ".dat");
