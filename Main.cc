@@ -28,7 +28,7 @@ int main(int argc, char** argv)
 
 	SolverCG solver(alpha,beta,gamma,eps,nx,im-i1+1);
 	cout << "eps : " << eps << endl;
-	for (int time=0; time<40; time++)
+	for (int time=0; time<1; time++)
 	{
 		//! construction de RHS
 		if(me == 0)
@@ -37,7 +37,7 @@ int main(int argc, char** argv)
 		}
 		cout << "Niter Schwartz : " << timeStep(solver, U, 1e-12, beta, gamma, time*dt, nIterMax, nx, ny, recouvr, me, np, i1, im) << endl;
 	}
-	
+
 	ofstream file_sol("sol/Sol" + to_string(me) + ".dat"), file_sol_exact("sol/Sol_exacte" + to_string(me) + ".dat");
 	double norm_diff=0., norm_exact=0.;
 	for (int j=0; j<(im-i1+1); j++)
@@ -71,7 +71,7 @@ int main(int argc, char** argv)
 
 	file_sol.close();
 	file_sol_exact.close();
-	
+
 	MPI_Finalize();
 
 
