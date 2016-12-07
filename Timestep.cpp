@@ -9,12 +9,6 @@ int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double 
 	VectorXd Ubas(nx), Uhaut(nx), UbasNext(nx), UhautNext(nx), Unext(nx*nyLocal), Rhs(nx*nyLocal);
 	MPI_Status status;
 
-	Rhs.setZero();
-	Ubas.setZero();
-	Uhaut.setZero();
-	UbasNext.setZero();
-	UhautNext.setZero();
-
 	int rc(recouvr>>1);
 
 	int i(0);
@@ -44,12 +38,34 @@ int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double 
 
 		Rhs += Un/dt;
 
-		var.gradConj(Unext, Rhs, Niter);
+		var.gradConj(Unext, Rhs, nIterMax);
 
 		Un = Unext;
 	}
 	else
 	{
+		if(me == 0)
+		{
+			MPI_Sendrecv(&Un.data()[(nyLocal-(recouvr+1))*nx], nx, MPI_DOUBLE, me+1, 200+me,
+					Uhaut.data(), nx, MPI_DOUBLE, me+1, 300+me+1,
+					MPI_COMM_WORLD, &status);
+		}
+		else if(me == np-1)
+		{
+			MPI_Sendrecv(&Un.data()[(recouvr)*nx], nx, MPI_DOUBLE, me-1, 300+me,
+					Ubas.data(), nx, MPI_DOUBLE, me-1, 200+me-1,
+					MPI_COMM_WORLD, &status);
+		}
+		else
+		{
+			MPI_Sendrecv(&Un.data()[(recouvr)*nx], nx, MPI_DOUBLE, me-1, 300+me,
+					Ubas.data(), nx, MPI_DOUBLE, me-1, 200+me-1,
+					MPI_COMM_WORLD, &status);
+
+			MPI_Sendrecv(&Un.data()[(nyLocal-(recouvr+1))*nx], nx, MPI_DOUBLE, me+1, 200+me,
+					Uhaut.data(), nx, MPI_DOUBLE, me+1, 300+me+1,
+					MPI_COMM_WORLD, &status);
+		}
 		do
 		{
 			Rhs.setZero();
@@ -57,7 +73,7 @@ int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double 
 			{
 				for(int i(0); i < nx; i++)
 				{
-					Rhs(bijection(i,nyLocal-1,nx)) = -gamma*UhautNext(i);
+					Rhs(bijection(i,nyLocal-1,nx)) = -gamma*Uhaut(i);
 					Rhs(bijection(i,0,nx)) = -gamma*functionG((i+1)*dx,0.,t,p);
 				}
 			}
@@ -66,15 +82,15 @@ int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double 
 				for(int i(0); i < nx; i++)
 				{
 					Rhs(bijection(i,nyLocal-1,nx)) = -gamma*functionG((i+1)*dx,ly,t,p);
-					Rhs(bijection(i,0,nx)) = -gamma*UbasNext(i);
+					Rhs(bijection(i,0,nx)) = -gamma*Ubas(i);
 				}
 			}
 			else
 			{
 				for(int i(0); i < nx; i++)
 				{
-					Rhs(bijection(i,nyLocal-1,nx)) = -gamma*UhautNext(i);
-					Rhs(bijection(i,0,nx)) = -gamma*UbasNext(i);
+					Rhs(bijection(i,nyLocal-1,nx)) = -gamma*Uhaut(i);
+					Rhs(bijection(i,0,nx)) = -gamma*Ubas(i);
 				}
 			}
 
@@ -90,7 +106,7 @@ int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double 
 
 			Rhs += Un/dt;
 
-			var.gradConj(Unext, Rhs, Niter);
+			var.gradConj(Unext, Rhs, nIterMax);
 
 			if(me == 0)
 			{
@@ -165,41 +181,8 @@ int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double 
 			Uhaut = UhautNext;
 			Ubas = UbasNext;
 			i++;
-		} while(maxnr > (eps*maxnr2));
+		} while(maxnr > (eps*maxnr2) && i < Niter);
 	}
-
-
-	//~ ofstream file_sol("sol/Sol" + to_string(me) + ".dat");
-	//~ if(me > 0) {
-		//~ for (int i=0; i<nx; i++)
-		//~ {
-			//~ double xi = (i+1)*dx;
-			//~ double yi = (i1)*dy;
-			//~ file_sol << xi << " " << yi << " " << Ubas(i) << endl;
-		//~ }
-		//~ file_sol << endl;
-	//~ }
-	//~ for (int j=0; j<(im-i1+1); j++)
-	//~ {
-		//~ for (int i=0; i<nx; i++)
-		//~ {
-			//~ double xi = (i+1)*dx;
-			//~ double yi = (i1+j+1)*dy;
-			//~ file_sol << xi << " " << yi << " " << Un(bijection(i,j,nx)) << endl;
-		//~ }
-		//~ file_sol << endl;
-	//~ }
-	//~ if(me < np-1) {
-		//~ for (int i=0; i<nx; i++)
-		//~ {
-			//~ double xi = (i+1)*dx;
-			//~ double yi = (im+2)*dy;
-			//~ file_sol << xi << " " << yi << " " << Uhaut(i) << endl;
-		//~ }
-		//~ file_sol << endl;
-	//~ }
-//~
-	//~ file_sol.close();
 
 	return i;
 }
