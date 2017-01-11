@@ -4,8 +4,11 @@
 
 	#include <Eigen>
 	#include "Tools.hpp"
-	
+	#include "Parameters.hpp"
+	#include <iostream>
+
 	using namespace Eigen;
+	using namespace std;
 
 	class SolverCG
 	{
@@ -15,9 +18,9 @@
 		public:
 			SolverCG(double alpha, double beta, double gamma, double eps, int nx, int ny);
 			void matmulA(const VectorXd& X, VectorXd& Y) const;
-			int gradConj(VectorXd& X, const VectorXd& B, int Niter) const;	
+			void matmulArobin_decentre(const VectorXd& X, VectorXd& Y, int proc, int np) const;
+			int gradConj(VectorXd& X, const VectorXd& B, int Niter, int BC, int proc, int np) const;
 	};
 
 
 #endif
-
