@@ -39,7 +39,62 @@ int SolverCG::gradConj(VectorXd& X, const VectorXd& B, int Niter, int BC, int pr
 		D = R + b*D;
 		iter++;
 	}
-	cout << "iter " << iter << " residu " << nr << endl;
+	//~ cout << "iter " << iter << " residu " << nr << endl;
+	return iter;
+}
+
+
+int SolverCG::bicgstab(VectorXd& X, const VectorXd& B, int Niter, int BC, int proc, int np) const
+{
+	int n(X.size()), iter(1);
+	VectorXd R(n), R0(n), V(n), P(n), T(n);
+	double nr, rho, alpha, omega, beta;
+
+	X.setZero();
+	if (BC==0)
+		matmulA(X, R);
+	else if (BC==1)
+		matmulArobin_decentre(X,R,proc,np);
+	R = B - R;
+	R0 = R;
+	rho = alpha = omega = 1.0;
+	P.setZero();
+	V.setZero();
+	nr = R.norm();
+
+	while(nr > _eps && iter < Niter)
+	{
+		beta = (rho*omega);
+		rho = R0.dot(R);
+		beta = (alpha*rho)/beta;
+		
+		P = R + beta*(P - omega*V);
+		if (BC==0)
+			matmulA(P, V);
+		else if (BC==1)
+			matmulArobin_decentre(P,V,proc,np);
+		
+		alpha = rho/(R0.dot(V));
+		X += alpha*P;
+		
+		R -= alpha*V;
+		nr = R.norm();
+		
+		if(nr > _eps) {
+			if (BC==0)
+				matmulA(R, T);
+			else if (BC==1)
+				matmulArobin_decentre(R,T,proc,np);
+			
+			omega = T.dot(R)/T.dot(T);
+			X += omega*R;
+			
+			R -= omega*T;
+			nr = R.norm();
+		}
+		iter++;
+	}
+
 	return iter;
 }
 

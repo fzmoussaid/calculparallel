@@ -20,6 +20,7 @@
 			void matmulA(const VectorXd& X, VectorXd& Y) const;
 			void matmulArobin_decentre(const VectorXd& X, VectorXd& Y, int proc, int np) const;
 			int gradConj(VectorXd& X, const VectorXd& B, int Niter, int BC, int proc, int np) const;
+			int bicgstab(VectorXd& X, const VectorXd& B, int Niter, int BC, int proc, int np) const;
 	};
 
 
