@@ -12,5 +12,7 @@ const double pi = 3.1415926535897932384;
 const int p=1;
 const int D = 1;
 const int BC = 1;
+const double a = 1.0;
+const double b = 1.0;
 
 #endif

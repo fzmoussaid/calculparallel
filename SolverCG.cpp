@@ -4,7 +4,7 @@ SolverCG::SolverCG(double alpha, double beta, double gamma, double eps, int nx, 
 	:	_alpha(alpha), _beta(beta), _gamma(gamma), _eps(eps), _nx(nx), _ny(ny)
 { }
 
-int SolverCG::gradConj(VectorXd& X, const VectorXd& B, int Niter, int BC, int proc, int np) const
+int SolverCG::gradConj(VectorXd& X, const VectorXd& B, int Niter, int proc, int np) const
 {
 	int n(X.size()), iter(1);
 	VectorXd R(n), W(n), D(n);
@@ -44,7 +44,7 @@ int SolverCG::gradConj(VectorXd& X, const VectorXd& B, int Niter, int BC, int pr
 }
 
 
-int SolverCG::bicgstab(VectorXd& X, const VectorXd& B, int Niter, int BC, int proc, int np) const
+int SolverCG::bicgstab(VectorXd& X, const VectorXd& B, int Niter, int proc, int np) const
 {
 	int n(X.size()), iter(1);
 	VectorXd R(n), R0(n), V(n), P(n), T(n);
@@ -148,7 +148,8 @@ void SolverCG::matmulArobin_decentre(const VectorXd& X, VectorXd& Y, int proc, i
 	}
 	else
 	{
-		double alpha_robin = _alpha + D/(dy+1)/(dy*dy);
+		double alpha_robin = _alpha - (b*D)/((b+a*dy)*(dy*dy));
+
 		// 1er bloc
 		Y(bijection(0,0,_nx)) = alpha_robin*X(bijection(0,0,_nx)) + _beta*X(bijection(1,0,_nx)) + _gamma*X(bijection(0,1,_nx));
 		for(int i = 1; i < _nx-1; i++)
@@ -183,7 +184,7 @@ void SolverCG::matmulArobin_decentre(const VectorXd& X, VectorXd& Y, int proc, i
 	}
 	else
 	{
-		double alpha_robin = _alpha + D/(1+dy)/(dy*dy);
+		double alpha_robin = _alpha - (b*D)/((b+a*dy)*(dy*dy));
 		// Dernier bloc
 		Y(bijection(0,_ny-1,_nx)) = _gamma*X(bijection(0,_ny-2,_nx)) + alpha_robin*X(bijection(0,_ny-1,_nx)) + _beta*X(bijection(1,_ny-1,_nx));
 		for(int i = 1; i < _nx-1; i++)

@@ -24,7 +24,8 @@ int main(int argc, char** argv)
 	charge(ny, np, me, recouvr, i1, im);
 
 	VectorXd U(nx*(im-i1+1));
-	U.setZero();
+	//~ U.setZero();
+	U.setOnes();
 
 	SolverCG solver(alpha,beta,gamma,eps,nx,im-i1+1);
 	cout << "eps : " << eps << endl;
