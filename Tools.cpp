@@ -32,3 +32,17 @@ void charge(int n, int np, int me, int recouvr, int& i1, int& im)
 		im += rc+recouvr%2;
 	}
 }
+
+void relativeNormL2(const VectorXd& v, const VectorXd& vref, double& norm, double& normRef)
+{
+	double x;
+	norm = 0.0;
+	normRef = 0.0;
+	for(int i(0); i < v.size(); ++i) {
+		x = v(i) - vref(i);
+		norm += x*x;
+		
+		x = vref(i);
+		normRef += x*x;
+	}
+}

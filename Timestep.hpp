@@ -13,6 +13,6 @@
 	
 	using namespace std;
 	
-	int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double gamma, double t, int Niter, int nx, int ny, int recouvr, int me, int np, int i1, int im);
+	int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double gamma, double t, int Niter, int recouvr, int me, int np, int i1, int im);
 
 #endif
