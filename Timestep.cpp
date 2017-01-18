@@ -61,6 +61,17 @@ int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double 
 						Uhaut.data(), nx, MPI_DOUBLE, me+1, 300+me+1,
 						MPI_COMM_WORLD, &status);
 			}
+			else if (BC==2)
+			{
+				for (int i=0; i<nx; i++)
+				{
+					Ubas_robin(i) = Un((nyLocal-(recouvr+1))*nx+i) + b*(Un((nyLocal-(recouvr+1))*nx+i+nx))/(2.*a*dy);
+				}
+
+				MPI_Sendrecv(Ubas_robin.data(), nx, MPI_DOUBLE, me+1, 200+me,
+						Uhaut.data(), nx, MPI_DOUBLE, me+1, 300+me+1,
+						MPI_COMM_WORLD, &status);
+			}
 		}
 		else if(me == np-1)
 		{
@@ -75,6 +86,17 @@ int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double 
 				for (int i=0; i<nx; i++)
 				{
 					Uhaut_robin(i) = a*Un(recouvr*nx+i) + b*(Un(recouvr*nx+i) - Un(recouvr*nx+i-nx))/dy;
+				}
+
+				MPI_Sendrecv(Uhaut_robin.data(), nx, MPI_DOUBLE, me-1, 300+me,
+						Ubas.data(), nx, MPI_DOUBLE, me-1, 200+me-1,
+						MPI_COMM_WORLD, &status);
+			}
+			else if (BC==2)
+			{
+				for (int i=0; i<nx; i++)
+				{
+					Uhaut_robin(i) = Un(recouvr*nx+i) + b*(Un(recouvr*nx+i-nx))/(2.*a*dy);
 				}
 
 				MPI_Sendrecv(Uhaut_robin.data(), nx, MPI_DOUBLE, me-1, 300+me,
@@ -110,6 +132,22 @@ int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double 
 						Uhaut.data(), nx, MPI_DOUBLE, me+1, 300+me+1,
 						MPI_COMM_WORLD, &status);
 			}
+			else if (BC==2)
+			{
+				for (int i=0; i<nx; i++)
+				{
+					Ubas_robin(i) = Un((nyLocal-(recouvr+1))*nx+i) + b*(Un((nyLocal-(recouvr+1))*nx+i+nx))/(2.*a*dy);
+					Uhaut_robin(i) = Un(recouvr*nx+i) + b*(Un(recouvr*nx+i-nx))/(2.*a*dy);
+				}
+
+				MPI_Sendrecv(Uhaut_robin.data(), nx, MPI_DOUBLE, me-1, 300+me,
+						Ubas.data(), nx, MPI_DOUBLE, me-1, 200+me-1,
+						MPI_COMM_WORLD, &status);
+
+				MPI_Sendrecv(Ubas_robin.data(), nx, MPI_DOUBLE, me+1, 200+me,
+						Uhaut.data(), nx, MPI_DOUBLE, me+1, 300+me+1,
+						MPI_COMM_WORLD, &status);
+			}
 		}
 		do
 		{
@@ -118,7 +156,7 @@ int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double 
 			{
 				for(int i(0); i < nx; i++)
 				{
-					if (BC==0)
+					if (BC==0 || BC == 2)
 					{
 						Rhs(bijection(i,nyLocal-1,nx)) = -gamma*Uhaut(i);
 						Rhs(bijection(i,0,nx)) = -gamma*functionG((i+1)*dx,0.,t,p);
@@ -132,7 +170,7 @@ int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double 
 			}
 			else if(me == np-1)
 			{
-				if (BC==0)
+				if (BC==0 || BC == 2)
 				{
 					for(int i(0); i < nx; i++)
 					{
@@ -151,7 +189,7 @@ int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double 
 			}
 			else
 			{
-				if (BC==0)
+				if (BC==0 || BC == 2)
 				{
 					for(int i(0); i < nx; i++)
 					{
@@ -202,6 +240,17 @@ int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double 
 							UhautNext.data(), nx, MPI_DOUBLE, me+1, 300+me+1,
 							MPI_COMM_WORLD, &status);
 				}
+				else if (BC==2)
+				{
+					for (int i=0; i<nx; i++)
+					{
+						UbasNext_robin(i) = Unext((nyLocal-(recouvr+1))*nx+i) + b*(Unext((nyLocal-(recouvr+1))*nx+i+nx))/(2.*a*dy);
+					}
+
+					MPI_Sendrecv(UbasNext_robin.data(), nx, MPI_DOUBLE, me+1, 200+me,
+							UhautNext.data(), nx, MPI_DOUBLE, me+1, 300+me+1,
+							MPI_COMM_WORLD, &status);
+				}
 			}
 			else if(me == np-1)
 			{
@@ -216,6 +265,17 @@ int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double 
 					for (int i=0; i<nx; i++)
 					{
 						UhautNext_robin(i) = a*Unext(recouvr*nx+i) + b*(Unext(recouvr*nx+i) - Unext(recouvr*nx+i-nx))/dy;
+					}
+
+					MPI_Sendrecv(UhautNext_robin.data(), nx, MPI_DOUBLE, me-1, 300+me,
+							UbasNext.data(), nx, MPI_DOUBLE, me-1, 200+me-1,
+							MPI_COMM_WORLD, &status);
+				}
+				else if (BC==2)
+				{
+					for (int i=0; i<nx; i++)
+					{
+						UhautNext_robin(i) = Unext(recouvr*nx+i) + b*(Unext(recouvr*nx+i-nx))/(2.*a*dy);
 					}
 
 					MPI_Sendrecv(UhautNext_robin.data(), nx, MPI_DOUBLE, me-1, 300+me,
@@ -241,6 +301,22 @@ int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double 
 					{
 						UbasNext_robin(i) = a*Unext((nyLocal-(recouvr+1))*nx+i) + b*(Unext((nyLocal-(recouvr+1))*nx+i) - Unext((nyLocal-(recouvr+1))*nx+i+nx))/dy;
 						UhautNext_robin(i) = a*Unext(recouvr*nx+i) + b*(Unext(recouvr*nx+i) - Unext(recouvr*nx+i-nx))/dy;
+					}
+
+					MPI_Sendrecv(UhautNext_robin.data(), nx, MPI_DOUBLE, me-1, 300+me,
+							UbasNext.data(), nx, MPI_DOUBLE, me-1, 200+me-1,
+							MPI_COMM_WORLD, &status);
+
+					MPI_Sendrecv(UbasNext_robin.data(), nx, MPI_DOUBLE, me+1, 200+me,
+							UhautNext.data(), nx, MPI_DOUBLE, me+1, 300+me+1,
+							MPI_COMM_WORLD, &status);
+				}
+				else if (BC==2)
+				{
+					for (int i=0; i<nx; i++)
+					{
+						UbasNext_robin(i) = Unext((nyLocal-(recouvr+1))*nx+i) + b*(Unext((nyLocal-(recouvr+1))*nx+i+nx))/(2.*a*dy);
+						UhautNext_robin(i) = Unext(recouvr*nx+i) + b*(Unext(recouvr*nx+i-nx))/(2.*a*dy);
 					}
 
 					MPI_Sendrecv(UhautNext_robin.data(), nx, MPI_DOUBLE, me-1, 300+me,
