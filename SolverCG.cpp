@@ -43,7 +43,6 @@ int SolverCG::gradConj(VectorXd& X, const VectorXd& B, int Niter, int proc, int 
 		D = R + b*D;
 		iter++;
 	}
-	//~ cout << "iter " << iter << " residu " << nr << endl;
 	return iter;
 }
 

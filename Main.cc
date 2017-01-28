@@ -13,7 +13,7 @@ using namespace Eigen;
 
 int main(int argc, char** argv)
 {
-	int me, np, i1, im, recouvr(6);
+	int me, np, i1, im, recouvr(4);
 	double alpha = 1./dt + 2.*D*(1./(dx*dx) + 1./(dy*dy)), beta = -D/(dx*dx), gamma = -D/(dy*dy);
 
 	MPI_Init (&argc, &argv);
@@ -28,19 +28,20 @@ int main(int argc, char** argv)
 	U.setOnes();
 
 	SolverCG solver(alpha,beta,gamma,eps,nx,im-i1+1);
-	cout << "eps : " << eps << endl;
 	for (int time=0; time<1; time++)
 	{
 		//! construction de RHS
 		if(me == 0)
 		{
 			cout << "iter " << time << endl;
+			cout << "Niter Schwartz : " << timeStep(solver, U, 1e-12, beta, gamma, time*dt, nIterMax, recouvr, me, np, i1, im) << endl;
+		} else {
+			timeStep(solver, U, 1e-12, beta, gamma, time*dt, nIterMax, recouvr, me, np, i1, im);
 		}
-		cout << "Niter Schwartz : " << timeStep(solver, U, 1e-12, beta, gamma, time*dt, nIterMax, nx, ny, recouvr, me, np, i1, im) << endl;
 	}
 
 	ofstream file_sol("sol/Sol" + to_string(me) + ".dat"), file_sol_exact("sol/Sol_exacte" + to_string(me) + ".dat");
-	double norm_diff=0., norm_exact=0.;
+	double norm_diff=0., norm_exact=0., x;
 	for (int j=0; j<(im-i1+1); j++)
 	{
 		for (int i=0; i<nx; i++)
@@ -52,14 +53,18 @@ int main(int argc, char** argv)
 			if (p==2)
 			{
 				file_sol_exact << xi << " " << yi << " " << sin(xi)+cos(yi) << endl;
-				norm_diff = max(abs(U(bijection(i,j,nx)) - (sin(xi)+cos(yi))),norm_diff);
-				norm_exact = max(abs(sin(xi)+cos(yi)),norm_exact);
+				x = sin(xi)+cos(yi);
+				norm_exact += x*x;
+				x = U(bijection(i,j,nx)) - x;
+				norm_diff += x*x;
 			}
 			else if (p==1)
 			{
 				file_sol_exact << xi << " " << yi << " " << xi*(1-xi)*yi*(1-yi) << endl;
-				norm_diff = max(abs(U(bijection(i,j,nx)) - (xi*(1-xi)*yi*(1-yi))),norm_diff);
-				norm_exact = max(abs(xi*(1-xi)*yi*(1-yi)),norm_exact);
+				x = xi*(1-xi)*yi*(1-yi);
+				norm_exact += x*x;
+				x = U(bijection(i,j,nx)) - x;
+				norm_diff += x*x;
 			}
 		}
 		file_sol << endl;
@@ -67,7 +72,12 @@ int main(int argc, char** argv)
 	}
 	if ((p==1)||(p==2))
 	{
-		cout << "erreur relative en norme infinie : " << norm_diff/norm_exact << endl;
+		MPI_Allreduce(&norm_diff, &norm_diff, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+		MPI_Allreduce(&norm_exact, &norm_exact, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+		if(me == 0)
+		{
+			cout << "Erreur relative en norme L2 : " << norm_diff/norm_exact << endl;
+		}
 	}
 
 	file_sol.close();

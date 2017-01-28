@@ -13,7 +13,7 @@ void commSchwarz(VectorXd& U, VectorXd& Uhaut, VectorXd& Ubas, int nyLocal, int 
 {
 	void *sendbuf;
 	VectorXd vecSend(nx);
-	//---------------- Communication condition bord haut ----------------------------------------------------------------------------
+	//---------------- Communication : reçoit le bord bas de me+1 et envoie son bord haut à me+1  -----------------------
 	if(me < np-1) {
 		if (BC==0)
 		{
@@ -37,7 +37,7 @@ void commSchwarz(VectorXd& U, VectorXd& Uhaut, VectorXd& Ubas, int nyLocal, int 
 		}
 		commMPI(sendbuf, Uhaut.data(), me+1, 200+me, 300+me+1);
 	}
-	//---------------- Communication condition bord bas ----------------------------------------------------------------------------
+	//---------------- Communication : reçoit le bord haut de me-1 et envoie son bord bas à me-1  -----------------------
 	if(me > 0) {
 		if (BC==0)
 		{
