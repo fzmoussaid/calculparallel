@@ -1,14 +1,20 @@
 
 #include "Tools.hpp"
 
-
+/**
+ * Bijection entre coordonnées 2D et coordonnées 1D
+ * pour un stockage ligne par ligne
+ * */
 int bijection(int i, int j, int nx)
 {
 	return i + j*nx;
 }
-
+/**
+ * Calcul de la charge en tenant compte du recouvrement
+ * */
 void charge(int n, int np, int me, int recouvr, int& i1, int& im)
 {
+	// On calcul la charge classiquement
 	int r = n%np;
 	if (me <= r-1)
 	{
@@ -21,8 +27,8 @@ void charge(int n, int np, int me, int recouvr, int& i1, int& im)
 		  im = i1 + n/np  -1;
 	}
 	
-	
-	int rc = recouvr>>1;
+	// On modifie les bornes en fonction du recouvrement
+	int rc = recouvr/2;
 	if(me > 0)
 	{
 		i1 -= rc;
@@ -33,6 +39,14 @@ void charge(int n, int np, int me, int recouvr, int& i1, int& im)
 	}
 }
 
+/**
+ * Calcul de l'erreur relative en norme L2
+ * 		v : Vecteur calculé
+ * 		vref : vecteur de référence
+ * En sortie : 
+ * 		norm : erreur relative
+ * 		normRef : norme L2 de référence
+ * */
 void relativeNormL2(const VectorXd& v, const VectorXd& vref, double& norm, double& normRef)
 {
 	double x;

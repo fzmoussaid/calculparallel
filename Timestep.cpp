@@ -1,6 +1,11 @@
 
 #include "Timestep.hpp"
 
+/**
+ *  Communication avec <proc> :
+ * 		sendbuf : Vecteur à envoyer
+ * 		recvbuf : Vecteur reçu
+ * */
 void commMPI(void *sendbuf, void *recvbuf, int proc, int tag1, int tag2)
 {
 	MPI_Status status;
@@ -9,29 +14,30 @@ void commMPI(void *sendbuf, void *recvbuf, int proc, int tag1, int tag2)
 			MPI_COMM_WORLD, &status);
 }
 
+/**
+ * Gère les communication d'une itération de Swcharz additif
+ * 		U : solution calculée localement
+ * 		Uhaut : ligne du haut reçue
+ * 		Ubas : ligne du bas reçue
+ *		nyLocal : charge
+ * 		recouvr : taille du recouvrement
+ * */
 void commSchwarz(VectorXd& U, VectorXd& Uhaut, VectorXd& Ubas, int nyLocal, int recouvr, int me, int np)
 {
-	void *sendbuf;
-	VectorXd vecSend(nx);
+	void *sendbuf = 0;
+	VectorXd vecSend;
 	//---------------- Communication : reçoit le bord bas de me+1 et envoie son bord haut à me+1  -----------------------
 	if(me < np-1) {
-		if (BC==0)
+		if(BC == 0) // Condition de Dirichlet
 		{
 			sendbuf = &U.data()[(nyLocal-(recouvr+1))*nx];
 		}
-		else if (BC==1)
+		else if(BC == 1) // Condition de Robin
 		{
+			vecSend.resize(nx);
 			for (int i=0; i<nx; i++)
 			{
-				vecSend(i) = U((nyLocal-(recouvr+1))*nx+i) - (b/(a*dy+b))*U((nyLocal-(recouvr+1))*nx+i+nx);
-			}
-			sendbuf = vecSend.data();
-		}
-		else if (BC==2)
-		{
-			for (int i=0; i<nx; i++)
-			{
-				vecSend(i) = U((nyLocal-(recouvr+1))*nx+i) + b*(U((nyLocal-(recouvr+1))*nx+i+nx))/(2.*a*dy);
+				vecSend(i) = U((nyLocal-(recouvr+1))*nx+i) - (b/(a*dy+b))*U((nyLocal-(recouvr+1))*nx+i+nx); // calcul de a*u + b*du/dn
 			}
 			sendbuf = vecSend.data();
 		}
@@ -39,23 +45,16 @@ void commSchwarz(VectorXd& U, VectorXd& Uhaut, VectorXd& Ubas, int nyLocal, int 
 	}
 	//---------------- Communication : reçoit le bord haut de me-1 et envoie son bord bas à me-1  -----------------------
 	if(me > 0) {
-		if (BC==0)
+		if(BC == 0) // Condition de Dirichlet
 		{
 			sendbuf = &U.data()[(recouvr)*nx];
 		}
-		else if (BC==1)
+		else if(BC == 1) // Condition de Robin
 		{
+			vecSend.resize(nx);
 			for (int i=0; i<nx; i++)
 			{
-				vecSend(i) = U(recouvr*nx+i) - (b/(a*dy+b))*U(recouvr*nx+i-nx);
-			}
-			sendbuf = vecSend.data();
-		}
-		else if (BC==2)
-		{
-			for (int i=0; i<nx; i++)
-			{
-				vecSend(i) = U(recouvr*nx+i) + b*(U(recouvr*nx+i-nx))/(2.*a*dy);
+				vecSend(i) = U(recouvr*nx+i) - (b/(a*dy+b))*U(recouvr*nx+i-nx); // calcul de a*u + b*du/dn
 			}
 			sendbuf = vecSend.data();
 		}
@@ -63,6 +62,14 @@ void commSchwarz(VectorXd& U, VectorXd& Uhaut, VectorXd& Ubas, int nyLocal, int 
 	}
 }
 
+/**
+ * Construit le second membre :
+ * 		U : solution calculée localement
+ * 		Uhaut : ligne du haut reçue
+ * 		Ubas : ligne du bas reçue
+ * 		nyLocal : charge
+ * 		recouvr : taille du recouvrement
+ * */
 void computeRHS(VectorXd& Rhs, const VectorXd& Un, const VectorXd& Ubas, const VectorXd& Uhaut, double gamma, double beta, double t, int nyLocal, int me, int np, int i1)
 {
 	Rhs.setZero();
@@ -108,15 +115,25 @@ void computeRHS(VectorXd& Rhs, const VectorXd& Un, const VectorXd& Ubas, const V
 	Rhs += Un/dt;
 }
 
-int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double gamma, double t, int Niter, int recouvr, int me, int np, int i1, int im)
+/**
+ * Iterations de Schwarz additif :
+ * 		var : solveur
+ * 		Un : solution calculée au temps précédent
+ * 		eps : critère d'arret des itérations de Schwarz
+ * 		beta, gamma : constantes dans la matrice A
+ * 		t : temps
+ * 		Niter : nombre maximal d'itérations de Schwarz
+ * 		recouvre : taille du recouvrement
+ * */
+void timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double gamma, double t, int Niter, int recouvr, int me, int np, int i1, int im)
 {
 	double norm, normRef, normHaut, normHautRef, normBas, normBasRef;
 	int nyLocal(im-i1+1);
 	VectorXd Ubas(nx), Uhaut(nx), UbasNext(nx), UhautNext(nx), Unext(nx*nyLocal), Rhs(nx*nyLocal);
 	
-	int i(0);
+	int iter(0); // Compteur d'itérations
 	
-	if(np == 1)
+	if(np == 1) // Cas à un seul proc, on effectue une résolution standard
 	{
 		Rhs.setZero();
 		for(int i(0); i < nx; i++)
@@ -142,13 +159,14 @@ int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double 
 		Rhs += Un/dt;
 
 		if(SOLVER == 0)
-			var.gradConj(Unext, Rhs, nIterMax, me, np);
+			var.gradConj(Unext, Rhs, nIterMax);
 		else if(SOLVER == 1)
-			var.bicgstab(Unext, Rhs, nIterMax, me, np);
+			var.bicgstab(Unext, Rhs, nIterMax);
 
 		Un = Unext;
+		iter = 1;
 	}
-	else
+	else // Plus d'un proc, on effectue l'algorithme de Schwarz additif
 	{
 		//---------------- Communications des conditions de bords initiales -------------------------------------------------------------
 
@@ -163,9 +181,9 @@ int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double 
 			//---------------- Résolution du système linéaire (0 = Gradient conjugué; 1 = BICGSTAB) -------------------------------------
 
 			if(SOLVER == 0)
-				var.gradConj(Unext, Rhs, nIterMax, me, np);
+				var.gradConj(Unext, Rhs, nIterMax);
 			else if(SOLVER == 1)
-				var.bicgstab(Unext, Rhs, nIterMax, me, np);
+				var.bicgstab(Unext, Rhs, nIterMax);
 
 			//---------------- Communications des conditions de bords ---------------------------------------------------------------------
 
@@ -192,9 +210,7 @@ int timeStep(const SolverCG& var, VectorXd& Un, double eps, double beta, double 
 			Un = Unext;
 			Uhaut = UhautNext;
 			Ubas = UbasNext;
-			i++;
-		} while(norm > (eps*normRef) && i < Niter);
+			iter++;
+		} while(norm > (eps*normRef) && iter < Niter);
 	}
-
-	return i;
 }

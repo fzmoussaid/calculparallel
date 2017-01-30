@@ -1,0 +1,26 @@
+Pour compiler :
+
+Dans le Makefile, vérifier le chemin vers le compilateur mpicxx.
+Puis executer make ou make debug
+
+
+
+
+
+Execution :
+
+mpirun -n <np> ./run
+
+Les fichiers de sorite sont écrit dans le dossier "sol" (qui doit exister)
+
+
+
+
+
+Pour afficher les données dans gnuplot (sur np procs) :
+
+Pour la solution calculée :
+splot for [i=0:<np-1>] 'sol/Sol'.i.'.dat w l;
+
+Pour la solution exacte (si disponible) :
+splot for [i=0:<np-1>] 'sol/Sol_exacte'.i.'.dat w l;
